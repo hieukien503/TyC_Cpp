@@ -1,5 +1,5 @@
 # TyC Programming Language Specification
-**Version 1.0 - January 2025**
+**Version 1.0 - January 2026**
 
 ## Table of Contents
 
@@ -34,7 +34,7 @@ The entry point of a TyC program is a function named `main` that takes no parame
 
 A function declaration has the following form:
 
-``c++
+```tyc
 <return_type> <identifier>(<parameter_list>) {
     <statement_list>
 }
@@ -48,7 +48,7 @@ Where:
 
 A parameter declaration has the form:
 
-``c++
+```tyc
 <type> <identifier>
 ```
 
@@ -60,7 +60,7 @@ The `<statement_list>` will be described in [Statements](#statements).
 
 #### Example
 
-``c++
+```tyc
 int add(int x, int y) {
     return x + y;
 }
@@ -75,7 +75,7 @@ void main() {
 
 When the return type is omitted, it is inferred from the return statements in the function:
 
-``c++
+```tyc
 // Return type inferred as int
 add(int x, int y) {
     return x + y;
@@ -105,7 +105,7 @@ void main() {
 
 ### Character Set
 
-The character set of TyC is ASCII. Blank (`' '`), tab (`'\t'`), form feed (i.e., the ASCII FF) (`'\f'`), carriage return (i.e., the ASCII CR – `'\r'`) and newline (i.e., the ASCII LF – `'\n'`) are whitespace characters. The `'\n'` is used as newline character in TyC.
+The character set of TyC is extended ASCII (characters with code points 0-255). Blank (`' '`), tab (`'\t'`), form feed (i.e., the ASCII FF) (`'\f'`), carriage return (i.e., the ASCII CR – `'\r'`) and newline (i.e., the ASCII LF – `'\n'`) are whitespace characters. The `'\n'` is used as newline character in TyC.
 
 This definition of lines can be used to determine the line numbers produced by a TyC compiler.
 
@@ -114,7 +114,7 @@ This definition of lines can be used to determine the line numbers produced by a
 There are two types of comment in TyC: block and line. A block comment starts with `"/*"` and ignores all characters (except EOF) until it reaches `"*/"`. A line comment ignores all characters from `"//"` to the end of the current line, i.e., when reaching end of line or end of file.
 
 For example:
-``c++
+```tyc
 /* This is a block comment, that
 may span in many lines*/
 auto x = 5; //this is a line comment
@@ -126,7 +126,7 @@ The following rules are enforced in TyC:
 
 For example:
 
-``c++
+```tyc
 /* This is a block comment so // has no meaning here */
 //This is a line comment so /* has no meaning here
 ```
@@ -173,7 +173,7 @@ The following is a list of **valid** operators along with their meaning. Note th
 
 ### Separator
 
-The following characters are the **separators**: left square bracket (`[`), right square bracket (`]`), left brace (`{`), right brace (`}`), left parenthesis (`(`), right parenthesis (`)`), semicolon (`;`), and comma (`,`).
+The following characters are the **separators**: left brace (`{`), right brace (`}`), left parenthesis (`(`), right parenthesis (`)`), semicolon (`;`), comma (`,`), and colon (`:`).
 
 ### Literal
 
@@ -187,33 +187,60 @@ Integer literals are of type **int**.
 
 #### Float literal
 
-Float literals are values that represent floating-point numbers. A float literal can be written in decimal notation (e.g., `3.14`, `0.5`, `123.456`) or in scientific notation (e.g., `1.23e4`, `5.67E-2`). A float literal may be preceded by a minus sign (`-`) to indicate a negative value.
+Float literals are values that represent floating-point numbers. A float literal consists of digits and may include a decimal point and/or an exponent part.
 
-The following are valid float numbers: `0.0` `3.14` `-2.5` `1.23e4` `5.67E-2` `1.` `.5`  
+A float literal must have at least one digit. If a decimal point is present, there must be at least one digit either before or after the decimal point (or both). The decimal point may be omitted if an exponent part is present.
+
+An exponent part consists of the letter `e` or `E`, optionally followed by a plus sign `+` or minus sign `-`, followed by one or more digits. The exponent sign is optional; if omitted, the exponent is positive. The exponent part itself is optional when a decimal point is present, but required when there is no decimal point.
+
+The following are valid float literals: `0.0` `3.14` `1.23e4` `5.67E-2` `1.` `.5` `1e4` `2E-3`  
 Float literals are of type **float**.
 
 #### String literals
 
-**String literals** consist of zero or more characters enclosed by double quotes (`"`). Use escape sequences (listed below) to represent special characters within a string.  
+**String literals** consist of zero or more characters enclosed by double quotes (`"`). A string literal can contain any character from the extended ASCII character set (code points 0-255), with the following restrictions:
 
-It is a compile-time error for a new line or EOF character to appear inside a string literal.  
-All the supported escape sequences are as follows:
+- **Newline (`\n`) and carriage return (`\r`) characters** cannot appear directly in a string literal. They must be represented using escape sequences (`\n` and `\r` respectively).
+- **Backslash (`\`)** and **double quote (`"`)** characters must be escaped when they appear in the string content (using `\\` and `\"` respectively).
+- **All other characters**, including unprintable ASCII characters (0-31) other than `\n` and `\r`, can appear directly in string literals without requiring escape sequences. However, for readability and portability, it is recommended to use escape sequences for unprintable characters when possible.
+
+**Escape sequences** are used to represent special characters within a string. All the supported escape sequences are as follows:
 
 ```
-\b   backspace
-\f   formfeed
-\r   carriage return
-\n   newline
-\t   horizontal tab
-\"   double quote
-\\   backslash
+\b   backspace (ASCII 8)
+\f   formfeed (ASCII 12)
+\r   carriage return (ASCII 13)
+\n   newline (ASCII 10)
+\t   horizontal tab (ASCII 9)
+\"   double quote (ASCII 34)
+\\   backslash (ASCII 92)
 ```
+
+**String Token Processing:**
+- When a valid string literal is recognized, the lexer automatically removes (strips) the enclosing double quotes from both ends. The token value contains only the string content without the quotes.
+- For error cases (`ILLEGAL_ESCAPE` and `UNCLOSE_STRING`), the lexer removes the opening double quote, but the error message includes the problematic content.
+- For `ILLEGAL_ESCAPE` errors, the error message includes the string content from the beginning (without the opening quote) up to and including the illegal escape sequence (i.e., the backslash and the character that follows it that makes it illegal).
+
+**Error Detection Order:**
+The lexer checks for errors in the following order (first match wins):
+1. **Illegal escape sequences** are detected first. An illegal escape is any backslash followed by a character that is not one of the supported escape characters (`b`, `f`, `r`, `n`, `t`, `"`, `\`), and is not followed by a newline or carriage return.
+2. **Unclosed strings** are detected if the string literal is not closed before encountering a newline, carriage return, or end of file.
+3. If neither error occurs, a **valid string literal** is recognized.
+
+For example, `"Hello \a World"` will be detected as an `ILLEGAL_ESCAPE` error because `\a` is an illegal escape sequence (detected before checking if the string is closed).
+
+It is a compile-time error for:
+- A newline (`\n`) or carriage return (`\r`) character to appear directly (unescaped) inside a string literal.
+- An EOF character to appear inside a string literal (i.e., the string literal is not closed before end of file).
+- An illegal escape sequence to appear (any backslash followed by a character that is not one of the supported escape characters: `b`, `f`, `r`, `n`, `t`, `"`, `\`).
 
 The following are valid examples of string literals:
-``c++
+```tyc
 "This is a string containing tab \t"
 "He asked me: \"Where is John?\""
 ""
+"String with unprintable: \x01"  // Character with code 1 can appear directly
+"Extended ASCII: \x80\xFF"        // Extended ASCII characters (128-255) are allowed
 ```
 
 A string literal has a type of **string**.
@@ -254,7 +281,7 @@ The keyword `struct` is used to define a composite data type that groups togethe
 
 A struct declaration has the following form:
 
-``c++
+```tyc
 struct <identifier> {
     <type1> <member1>;
     <type2> <member2>;
@@ -267,18 +294,19 @@ Where:
 - `<identifier>` is the struct name
 - Each `<type>` must be an explicit type (`int`, `float`, `string`, or another struct type)
 - Each `<member>` is a member name (identifier)
-- **Note:** Struct members cannot use `auto` for type inference - the type must be explicitly declared
-- **Note:** Nested structures (structs within structs) are not supported
+- A struct can have zero or more members.
 
 **Important Rules:**
-- Struct members cannot use `auto` - only explicit types are allowed
-- Struct definitions cannot be nested (no struct declaration inside another struct declaration)
-- However, struct members can be of other struct types (using previously declared struct types)
+- Struct members must have explicit types - they cannot use `auto` for type inference
+- Nested struct definitions are not supported: Struct declarations cannot be nested (you cannot declare a struct inside another struct declaration)
+- Struct members can be struct types: However, struct members can be of other struct types (using previously declared struct types)
 - Struct names must be unique in the program
 - Struct members can be of primitive types (`int`, `float`, `string`) or other struct types (that are declared before use)
 
 For example:
-``c++
+```tyc
+struct Empty {};  // Valid: empty struct with no members
+
 struct Point {
     int x;
     int y;
@@ -295,7 +323,7 @@ struct Person {
 
 A struct variable can be declared using the struct name as the type:
 
-``c++
+```tyc
 <struct_name> <identifier>;                    // without initialization
 <struct_name> <identifier> = {<member_list>};  // with initialization
 ```
@@ -312,11 +340,13 @@ Where:
   - The first expression initializes the first member
   - The second expression initializes the second member
   - And so on...
-- Each expression in `<member_list>` can be a literal, a variable, a function call, or any other expression that evaluates to the correct type
+- Each expression in `<member_list>` can be a literal, a variable, a function call, a struct literal (for struct members that are struct types), or any other expression that evaluates to the correct type
+- **Initialization of struct members that are struct types:** If a struct member is of another struct type, it can be initialized using a struct literal (e.g., `Point3D p = {{1, 2}, 3};`) or a variable of that struct type (e.g., `Point2D p2 = {1, 2}; Point3D p3 = {p2, 3};`)
+- **Struct literals in function calls:** Struct literals can be used as function arguments (e.g., `f({4, 5})`), where the struct literal's type is determined by the function parameter type
 - If a struct variable is declared without initialization, all its members have undefined values until assigned
 
 For example:
-``c++
+```tyc
 Point p1;                      // uninitialized
 Point p2 = {10, 20};          // initialized: x=10, y=20
 
@@ -328,16 +358,17 @@ Person person2 = {"John", 25, 1.75};  // initialized: name="John", age=25, heigh
 
 Struct members are accessed using the dot (`.`) operator:
 
-``c++
+```tyc
 <struct_variable>.<member_name>
 ```
 
 For example:
-``c++
+```tyc
 Point p = {10, 20};
 p.x = 30;           // assign to member x
 auto x_coord = p.x; // read member x
 printInt(p.x);      // use member x in expression
+p.x++;              // increment member x (parsed as (p.x)++)
 ```
 
 #### Struct Operations
@@ -348,7 +379,7 @@ printInt(p.x);      // use member x in expression
 - **Member Access**: The dot (`.`) operator is used to access struct members.
 
 For example:
-``c++
+```tyc
 Point p1 = {10, 20};
 Point p2;
 p2 = p1;        // Copy all members: p2.x = 10, p2.y = 20
@@ -366,23 +397,23 @@ TyC supports two ways to declare variables:
 #### Variable Declaration Forms
 
 **With `auto` and initialization (type inference):**
-``c++
+```tyc
 auto <identifier> = <expression>;
 ```
 
 **With `auto` without initialization:**
-``c++
+```tyc
 auto <identifier>;
 ```
 Note: When using `auto` without initialization, the variable's type must be determined from subsequent assignments or usages. However, if the variable is used before being assigned, an error occurs.
 
 **With explicit type and initialization:**
-``c++
+```tyc
 <type> <identifier> = <expression>;
 ```
 
 **With explicit type without initialization:**
-``c++
+```tyc
 <type> <identifier>;
 ```
 
@@ -390,7 +421,7 @@ Where `<type>` is one of: `int`, `float`, `string`, or a struct type name
 
 #### Examples
 
-``c++
+```tyc
 // With auto and initialization
 auto x = 10;           // x is int (inferred)
 auto y = 3.14;         // y is float (inferred)
@@ -483,11 +514,27 @@ The operand must be of **int** type. Float values cannot be used with increment/
 
 A **function call** is an expression that invokes a function. It has the form:
 
-``c++
+```tyc
 <identifier>(<argument_list>)
 ```
 
 where `<argument_list>` is a comma-separated list of expressions (or empty). The type of a function call expression is the return type of the function being called.
+
+### Assignment Expression
+
+An **assignment expression** assigns a value to a variable and can be used as an expression. It has the form:
+
+```tyc
+<identifier> = <expression>
+```
+
+or
+
+```tyc
+<member_access> = <expression>
+```
+
+Assignment expressions are right-associative, allowing chained assignments such as `x = y = z = 10;`, which is parsed as `x = (y = (z = 10));`. Assignment expressions can be used in expression contexts, for example: `int y = (x = 5) + 7;`.
 
 ### Primary Expression
 
@@ -503,10 +550,10 @@ The order of precedence for operators is listed from highest to lowest:
 
 | **Operator** | **Associativity** |
 |--------------|-------------------|
+| `.` (member access) | left |
 | `++`, `--` (postfix) | left |
 | `++`, `--` (prefix) | right |
 | `!`, `-` (unary), `+` (unary) | right |
-| `.` (member access) | left |
 | `*`, `/`, `%` | left |
 | `+`, `-` (binary) | left |
 | `<`, `<=`, `>`, `>=` | left |
@@ -525,20 +572,20 @@ Every operand of an operator must be evaluated before any part of the operation 
 
 ## Statements
 
-A statement, which does not return anything (except return statement), indicates the action a program performs. There are many kinds of statements, as described as follows.
+A statement, which does not return anything (except return statement), indicates the action a program performs. There are many kinds of statements, as described as follows. Note that a semicolon (`;`) by itself does not constitute a valid statement; it must be part of a complete statement such as an expression statement, variable declaration, or other statement types.
 
 ### Variable Declaration Statement
 
 A **variable declaration** declares a variable. The initialization expression is optional:
 
 **With type inference (using `auto`):**
-``c++
+```tyc
 auto <identifier> = <expression>;    // with initialization
 auto <identifier>;                    // without initialization
 ```
 
 **With explicit type:**
-``c++
+```tyc
 <type> <identifier> = <expression>;  // with initialization
 <type> <identifier>;                  // without initialization
 ```
@@ -552,7 +599,7 @@ Where `<type>` is one of: `int`, `float`, `string`, or a struct type name
 - When using explicit type without initialization: the variable has the explicitly declared type
 
 For example:
-``c++
+```tyc
 // With auto and initialization
 auto x = 10;           // x is int (inferred)
 auto y = 3.14;         // y is float (inferred)
@@ -579,7 +626,7 @@ string t;
 A block statement begins with the left brace `{` and ends with the right brace `}`. Between the two braces, there may be a list of variable declarations and statements.
 
 For example:
-``c++
+```tyc
 {
     auto x = 10;
     auto y = 20;
@@ -588,38 +635,25 @@ For example:
 }
 ```
 
-### Assignment Statement
-
-An **assignment statement** assigns a value to a variable. An assignment takes the following form:  
-``c++
-<identifier> = <expression>;
-```
-
-The type of the value returned by the `<expression>` must match the type of the variable.  
-
-The following code fragment contains examples of assignment:
-``c++
-x = 5;
-x = x + 1;
-```
-
 ### If Statement
 
 The **if statement** conditionally executes one of two statements based on the value of an expression. The form of an if statement is:  
-``c++
+```tyc
 if (<expression>) <statement>
 ```
 
 or
 
-``c++
+```tyc
 if (<expression>) <statement> else <statement>
 ```
 
-where `<expression>` evaluates to an **int** value (0 is false, non-zero is true). If the expression results in non-zero then the first `<statement>` is executed. If `<expression>` evaluates to 0 and an else clause is specified then the `<statement>` following `else` is executed. If no else clause exists and expression is 0 then the if statement is passed over.  
+where `<expression>` evaluates to an **int** value (0 is false, non-zero is true). If the expression results in non-zero then the first `<statement>` is executed. If `<expression>` evaluates to 0 and an else clause is specified then the `<statement>` following `else` is executed. If no else clause exists and expression is 0 then the if statement is passed over.
+
+When nested if statements are used, an `else` clause is always associated with the nearest (innermost) `if` statement that does not already have an `else` clause. For example, in `if (x) if (y) a; else b;`, the `else` is associated with `if (y)`, not `if (x)`.
 
 The following is an example of an if statement:
-``c++
+```tyc
 if (flag) {
     printInt(1);
 } else {
@@ -630,14 +664,14 @@ if (flag) {
 ### While Statement
 
 The **while statement** allows repetitive execution of one or more statements. A while statement executes a loop while a condition is true. While statements take the following form:  
-``c++
+```tyc
 while (<expression>) <statement>
 ```
 
 The `<expression>` must evaluate to an **int** value (0 is false, non-zero is true). The `<statement>` is executed repeatedly as long as the expression evaluates to non-zero.
 
 For example:
-``c++
+```tyc
 auto i = 0;
 while (i < 10) {
     printInt(i);
@@ -648,7 +682,7 @@ while (i < 10) {
 ### For Statement
 
 The **for statement** allows repetitive execution of one or more statements. For statements take the following form:  
-``c++
+```tyc
 for (<init>; <condition>; <update>) <statement>
 ```
 
@@ -658,7 +692,7 @@ Where:
 - `<update>` is an assignment, increment, or decrement (optional)
 
 For example:
-``c++
+```tyc
 for (auto i = 0; i < 10; ++i) {
     printInt(i);
 }
@@ -667,11 +701,11 @@ for (auto i = 0; i < 10; ++i) {
 ### Switch Statement
 
 The **switch statement** allows selection among multiple statements based on the value of an expression. Switch statements take the following form:  
-``c++
+```tyc
 switch (<expression>) {
-    case <constant_expression>:
+    case <case_expression>:
         <statement_list>
-    case <constant_expression>:
+    case <case_expression>:
         <statement_list>
     ...
     default:
@@ -681,16 +715,22 @@ switch (<expression>) {
 
 Where:
 - `<expression>` must evaluate to an **int** value
-- `<constant_expression>` is an integer literal or constant expression that evaluates to an integer value
+- `<case_expression>` is an expression that evaluates to an **int** value. The case expression can be:
+  - An integer literal: `case 1:`, `case 42:`
+  - An integer literal with unary operators: `case +1:`, `case -5:`
+  - A parenthesized expression: `case (1):`, `case (2+3):`
+  - A constant expression (expressions involving only integer literals and operators): `case 1+2:`, `case (3*4):`
+  - Any other expression that evaluates to an int value at compile time
 - Each `case` label must be followed by a colon (`:`)
-- The `default` clause is optional and can appear anywhere within the switch statement
-- `<statement_list>` can be empty or contain one or more statements
+- The `default` clause is **optional** and can appear anywhere within the switch statement. **At most one `default` clause is allowed** - if multiple `default` clauses are present, it is a compile-time error.
+- The switch body can be empty (no case statements and no default clause): `switch (x) { }`
+- `<statement_list>` within each case or default can be empty or contain one or more statements
 - Like C, **TyC switch statements have fall-through behavior** - execution continues to the next case unless a `break` statement is used
 
 **Important:** In TyC, switch statements follow C-style fall-through behavior. Execution will fall through to subsequent cases unless explicitly terminated with a `break` statement. You can use multiple case labels for the same code block to handle multiple values.
 
 For example:
-``c++
+```tyc
 auto day = 2;
 switch (day) {
     case 1:
@@ -703,9 +743,26 @@ switch (day) {
     default:
         printInt(0);
 }
-```
 
-In the example above, both case 2 and case 3 will execute the same code (print 2) because case 2 falls through to case 3.
+// Empty switch body is valid
+switch (x) { }
+
+// Case with constant expressions
+switch (x) {
+    case 1+2:        // Valid: constant expression
+        printInt(3);
+        break;
+    case (4):        // Valid: parenthesized expression
+        printInt(4);
+        break;
+    case +5:         // Valid: unary plus
+        printInt(5);
+        break;
+    case -6:         // Valid: unary minus
+        printInt(6);
+        break;
+}
+```
 
 ### Break Statement
 
@@ -732,12 +789,17 @@ The type of the expression must match the return type of the function.
 
 ### Expression Statement
 
-An **expression statement** is an expression followed by a semicolon. Expression statements are used for their side effects (such as function calls).
+An **expression statement** is an expression followed by a semicolon. Expression statements are used for their side effects (such as function calls, assignments, or increment/decrement operations).
+
+An assignment expression can be used as an expression statement. When used as a statement, the assignment performs the side effect of updating the variable's value. The type of the value returned by the expression must match the type of the variable being assigned.
 
 For example:
-``c++
-printInt(x);
-x + y;  // valid but does nothing useful
+```tyc
+printInt(x);      // function call expression statement
+x = 5;            // assignment expression statement
+x = x + 1;        // assignment expression statement
+x++;              // increment expression statement
+x + y;            // valid but does nothing useful
 ```
 
 ---
@@ -764,7 +826,7 @@ Literals have inherent types:
 - The type is inferred from the initialization expression
 - The variable's type is the type of the initialization expression
 
-``c++
+```tyc
 auto x = 10;           // x: int (from integer literal)
 auto y = 3.14;         // y: float (from float literal)
 auto msg = "hello";    // msg: string (from string literal)
@@ -780,7 +842,7 @@ auto z = x + y;        // z: float (from expression result type)
   - If first usage is as a return value: type is determined by the function return type
 - If the variable is used in a context where its type cannot be determined, a semantic error occurs
 
-``c++
+```tyc
 auto a;                // type unknown initially
 a = 10;                // a: int (inferred from assignment - first usage)
 auto b;
@@ -792,16 +854,17 @@ auto x;
 x = readInt();         // x: int (inferred from function return type - first usage)
 
 auto y;
-// printInt(y);        // Error: cannot infer type from printInt() call alone
-y = 10;                // y: int (inferred from first usage - assignment)
-printInt(y);           // Now y is int, so printInt can be used
+printInt(y);           // y: int (inferred from function parameter type - first usage)
+auto z;
+z = readInt();         // z: int (inferred from function return type - first usage)
+printInt(z);           // Now z is int, so printInt can be used
 ```
 
 **2.3 Variable Declaration with Explicit Type and Initialization:**
 - The variable's type is the explicitly declared type
 - The type of the initialization expression must match the declared type (type checking required)
 
-``c++
+```tyc
 int x = 10;            // x: int (explicit)
 float y = 3.14;        // y: float (explicit)
 string s = "hello";    // s: string (explicit)
@@ -812,7 +875,7 @@ int z = x + 5;         // z: int (explicit, expression must evaluate to int)
 - The variable's type is the explicitly declared type
 - The variable has an undefined value until assigned
 
-``c++
+```tyc
 int a;                 // a: int (explicit)
 float b;               // b: float (explicit)
 string c;              // c: string (explicit)
@@ -908,8 +971,9 @@ The type of an expression is inferred from its components:
 
 - Function return types can be explicitly declared or omitted (inferred)
 - When the return type is omitted, it is inferred from the return statements in the function:
-  - If all return statements return a value of type `T`, the return type is inferred as `T`
+  - The return type is inferred from the **first return statement** that returns a value
   - If there are no return statements or only `return;` statements, the return type is inferred as `void`
+  - All subsequent return statements must return a value of the inferred return type - if a return statement returns a value of a different type, it is a compile-time error (TypeMismatchInStatement)
 - All `return` statements in a function must return a value of the inferred/declared return type (or no value for `void`)
 
 ### Strict Operator Typing
@@ -932,7 +996,7 @@ The type of an expression is inferred from its components:
 
 ### Type Inference Examples
 
-``c++
+```tyc
 // Rule 2.1: auto with initialization
 auto x = 10;              // x: int (from integer literal)
 auto y = 20;              // y: int (from integer literal)
@@ -1028,7 +1092,7 @@ To perform input and output operations, TyC provides the following built-in func
 
 ### Example 1: Hello World
 
-``c++
+```tyc
 void main() {
     printString("Hello, World!");
 }
@@ -1036,7 +1100,7 @@ void main() {
 
 ### Example 2: Simple Calculator
 
-``c++
+```tyc
 int add(int x, int y) {
     return x + y;
 }
@@ -1059,7 +1123,7 @@ void main() {
 
 ### Example 3: Loop with Conditions
 
-``c++
+```tyc
 void main() {
     auto n = readInt();
     auto i = 0;
@@ -1079,7 +1143,7 @@ void main() {
 
 ### Example 4: Factorial Function
 
-``c++
+```tyc
 int factorial(int n) {
     if (n <= 1) {
         return 1;
@@ -1097,7 +1161,7 @@ void main() {
 
 ### Example 5: Variable Declaration with Optional Initialization
 
-``c++
+```tyc
 void main() {
     // With auto and initialization
     auto x = readInt();
@@ -1130,7 +1194,7 @@ void main() {
 
 ### Example 6: Struct Usage
 
-``c++
+```tyc
 struct Point {
     int x;
     int y;
@@ -1184,8 +1248,8 @@ A TyC program consists of a sequence of struct declarations and function declara
 - Each struct declaration defines a new composite type with named members
 - Struct members must have explicit types (`int`, `float`, `string`, or another struct type)
 - Struct members cannot use `auto` for type inference
-- Struct definitions cannot be nested (no struct declaration inside another struct declaration)
-- However, struct members can be of other struct types (using previously declared struct types)
+- **Nested struct definitions are not supported:** Struct declarations cannot be nested (you cannot declare a struct inside another struct declaration)
+- **Struct members can be struct types:** However, struct members can be of other struct types (using previously declared struct types)
 
 **Function Declarations:**
 - Each function has:
@@ -1199,7 +1263,7 @@ The main structural elements include:
 
 - **Structs**: Composite types with named members of explicit types
 - **Functions**: Declarations with return types, parameters, and bodies
-- **Statements**: Variable declarations, assignments, control flow (if, while, for, switch-case), break, continue, return, expression statements, and blocks
+- **Statements**: Variable declarations, control flow (if, while, for, switch-case), break, continue, return, expression statements (including assignments), and blocks
 - **Expressions**: Primary expressions (identifiers, literals, parenthesized, member access), unary operations, binary operations following operator precedence, function calls, and postfix operations (increment/decrement)
 - **Types**: `int`, `float`, `string`, `void`, struct types, and type inference using `auto`
 - **Variable Declaration**: Can use `auto` for type inference or explicit types (`int`, `float`, `string`, or struct type names)
@@ -1217,7 +1281,7 @@ The main structural elements include:
 9. Logical OR (`||`)
 10. Assignment (`=`)
 
-**Note**: The complete grammar rules must be defined in the ANTLR4 grammar file (c++.g4`) by the student. This specification provides the requirements and examples, but the detailed grammar implementation is part of the assignment.
+**Note**: The complete grammar rules must be defined in the ANTLR4 grammar file (`TyC.g4`) by the student. This specification provides the requirements and examples, but the detailed grammar implementation is part of the assignment.
 
 ---
 

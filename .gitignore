@@ -1,4 +1,9 @@
-/CMakeFiles
+**/CMakeFiles/
 *.exe
 CMakeCache.txt
-cmake_install.cmake
+*.cmake
+/Grammar/.antlr
+*.a
+/dist
+/bin
+/_deps
