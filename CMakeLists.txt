@@ -1,5 +1,25 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 project(TyC LANGUAGES CXX)
+
+# Install reproc++ and Catch2 using FetchContent
+include(FetchContent)
+
+# reproc++
+set(REPROC++ ON)
+FetchContent_Declare(
+    reproc
+    GIT_REPOSITORY https://github.com/DaanDeMeyer/reproc.git
+    GIT_TAG        v14.2.4
+)
+
+# Catch2
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.5.2
+)
+
+FetchContent_MakeAvailable(reproc Catch2)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -64,20 +84,32 @@ target_include_directories(codegen PUBLIC
 )
 
 # Testing (optional)
-add_library(testlib
-    ${PROJECT_SOURCE_DIR}/test/src/LexerSuite.cpp
-    ${PROJECT_SOURCE_DIR}/test/src/ParserSuite.cpp
-    ${PROJECT_SOURCE_DIR}/test/src/ASTGenSuite.cpp
-    ${PROJECT_SOURCE_DIR}/test/src/CheckerSuite.cpp
-    ${PROJECT_SOURCE_DIR}/test/src/CodeGenSuite.cpp
-    ${PROJECT_SOURCE_DIR}/test/src/TestUtils.cpp
+add_executable(compiler_tests
+    test/src/LexerSuite.cpp
+    test/src/ParserSuite.cpp
+    test/src/ASTGenSuite.cpp
+    test/src/CheckerSuite.cpp
+    test/src/CodeGenSuite.cpp
+    test/src/TestUtils.cpp
 )
 
-target_include_directories(testlib PUBLIC
+target_include_directories(compiler_tests PRIVATE
     ${PROJECT_SOURCE_DIR}/test/headers
 )
 
-target_link_libraries(testlib PUBLIC grammar)
+target_link_libraries(compiler_tests PRIVATE
+    Catch2::Catch2WithMain
+    grammar
+    ast
+    checker
+    codegen
+)
+
+# CTest + Catch2 integration
+include(CTest)
+include(Catch)
+
+catch_discover_tests(compiler_tests)
 
 # Executable
 add_executable(main
@@ -89,5 +121,5 @@ target_link_libraries(main
     checker
     codegen
     grammar
-    testlib
+    reproc++
 )

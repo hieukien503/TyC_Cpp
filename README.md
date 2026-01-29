@@ -122,6 +122,8 @@ The `ASTGeneration` class must:
 ├── README.md                   # Project documentation
 ├── tyc_specification.md        # Language specification
 ├── external/                   # External dependencies
+│   ├── jar_file
+│   │   └──antlr-4.13.2-complete.jar
 │   └── antlr4-cpp-runtime 
 ├── Grammar/                    # Grammar definitions
 │   ├── src/                    # Grammar source code
@@ -172,7 +174,7 @@ The `ASTGeneration` class must:
     │   ├── CodeGenSuite.cpp    # Implementation of CodeGenSuite class
     │   └── TestUtils.cpp       # Implementation of Testing utilities class
     ├── testcases/              # Testcases folder
-    └── solutions/                  # Solutions folder
+    └── solutions/              # Solutions folder
 ```
 
 ## Quick Start
@@ -187,7 +189,7 @@ The `ASTGeneration` class must:
 
 1. **Clone the repository:**
    ```bash
-   cd TyC-compiler
+   cd TyC_CPP
    ```
 
 2. **Generate MinGW-compatible Makefiles:**
@@ -197,10 +199,15 @@ The `ASTGeneration` class must:
 
 3. **Build the target**
    ```bash
-   make main
+   make
    ```
 
-4. **Compile ANTLR grammar files**
+4. **Check for dependencies**
+   ```bash
+   ./main check
+   ```
+
+5. **Compile ANTLR grammar files**
    ```bash
    ./main gen
    ```
@@ -211,11 +218,23 @@ The `ASTGeneration` class must:
    ```
 
 6. **Run tests (update later):**
+    ```bash
+   ./main test <TestSuite>
+   ```
+
+Where `<TestSuite>` is one of the following:
+- `LexerSuite`
+- `ParserSuite`
+- `ASTGenSuite`
+- `CheckerSuite`
+- `CodeGenSuite`
 
 ## Available Commands (after generating MinGW-compatible Makefiles and building the target):
 
-- `./main gen` - Install dependencies and set up environment
-- `./main run` - Run the project (with a custom main.tyc file in the root directory)
+- `./main check`                - Check for dependencies
+- `./main gen`                  - Install dependencies and set up environment
+- `./main run`                  - Run the project (with a custom main.tyc file in the root directory)
+- `./main test <TestSuite>`     - Run the test cases
 
 ## License
 

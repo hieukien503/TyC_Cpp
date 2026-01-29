@@ -7,3 +7,4 @@ CMakeCache.txt
 /dist
 /bin
 /_deps
+*.tcl

@@ -2,10 +2,6 @@
 #define LEXER_SUITE_HPP
 
 #include "./TestUtils.hpp"
-
-class LexerSuite {
-public:
-    
-};
+#include "catch2/catch_test_macros.hpp"
 
 #endif

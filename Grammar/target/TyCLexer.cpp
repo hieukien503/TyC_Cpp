@@ -2,7 +2,7 @@
 #include "../src/lexererr.hpp"
 
 
-// Generated from ./Grammar/src/TyC.g4 by ANTLR 4.13.2
+// Generated from Grammar/src/TyC.g4 by ANTLR 4.13.2
 
 
 #include "TyCLexer.h"
